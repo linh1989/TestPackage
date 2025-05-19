@@ -90,11 +90,11 @@ typedef enum
 } modbus_selftest_state_t;
 
 typedef enum {
-	HV_ISO_INVALID = 0,
-	HV_ISO_VALID,	
-	HV_ISO_WARNING,
-	HV_ISO_FAULT,
-	HV_ISO_MAX
+	ISOCHA_ISO_INVALID = 0,
+	ISOCHA_ISO_VALID,	
+	ISOCHA_ISO_WARNING,
+	ISOCHA_ISO_FAULT,
+	ISOCHA_ISO_MAX
 } modbus_iso_status_t;
 
 typedef struct {

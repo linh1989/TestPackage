@@ -32,17 +32,17 @@
 #define REC_ALERT_SIG_NUM 8
 
 static void* read_cb(void *ctx);
-static void on_can_rx_cb(modbus_response_t response, void *data, void *context);
+static void on_rtu_rx_cb(modbus_response_t response, void *data, void *context);
 static void send_response(int client_fd, modbus_response_t response, uint32_t len, uint8_t *data);
 
-modbus_service_err_t modbus_service_run(const char *service)
+modbus_err_t modbus_service_run(const char *service)
 {
 	FUNC_ENTRY();
 
 	memset(rec_error_state,    0, sizeof(rec_error_state));
 
-	const modbus_impl_handle_t *can_hdl_ptr = modbus_impl_get_handle();
-	can_hdl_ptr->run();
+	const modbus_impl_handle_t *rtu_hdl_ptr = modbus_impl_get_handle();
+	rtu_hdl_ptr->run();
 
 	SLOGI("%s", "Start listening");
 	int sock_fd =  socket(AF_INET, SOCK_STREAM, 0);
@@ -100,7 +100,7 @@ modbus_service_err_t modbus_service_run(const char *service)
 	}
 
 	FUNC_EXIT();
-	return MODBUS_SERVICE_ERR_NONE;
+	return MODBUS_ERR_NONE;
 }
 
 static void* read_cb(void *ctx)
@@ -110,7 +110,7 @@ static void* read_cb(void *ctx)
 	connection_data_t*    conn_data = (connection_data_t*)ctx;
 	modbus_impl_subject* subject   = modbus_impl_get_subject();
 
-	conn_data->receiver  = modbus_impl_create_receiver(conn_data, on_can_rx_cb);
+	conn_data->receiver  = modbus_impl_create_receiver(conn_data, on_rtu_rx_cb);
 	subject->register_receiver(conn_data->receiver);
 
 	uint8_t  buffer[4096];
@@ -145,8 +145,8 @@ static void* read_cb(void *ctx)
 				}
 				
 				Rpcproto__RspHeader rsphdr = RPCPROTO__RSP_HEADER__INIT;
-				modbus_service_err_t ret = rpc_invoke_call(reqhdr, &rsphdr, conn_data);
-				if (ret != MODBUS_SERVICE_ERR_NONE)
+				modbus_err_t ret = rpc_invoke_call(reqhdr, &rsphdr, conn_data);
+				if (ret != MODBUS_ERR_NONE)
 				{
 					SLOGI("%s", "rpc_invoke_call failed");
 				}

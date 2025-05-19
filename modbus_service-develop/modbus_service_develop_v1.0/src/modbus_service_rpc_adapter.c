@@ -34,7 +34,7 @@ rpc2_handler_func vtable[MODBUS_REQUEST_MAX] = {
     [MODBUS_REQUEST_SET_ISO_MEASURE_STATE] = set_iso_measurement_state,
 };
 
-modbus_service_err_t rpc_invoke_call(Rpcproto__ReqHeader *reqhdr, Rpcproto__RspHeader *rsphdr, void *context)
+modbus_err_t rpc_invoke_call(Rpcproto__ReqHeader *reqhdr, Rpcproto__RspHeader *rsphdr, void *context)
 {
     switch (reqhdr->id)
     {
@@ -67,7 +67,7 @@ modbus_service_err_t rpc_invoke_call(Rpcproto__ReqHeader *reqhdr, Rpcproto__RspH
         break;
     }
     
-    modbus_service_err_t err = (modbus_service_err_t)vtable[reqhdr->id](&reqhdr->params, &rsphdr->result, context);
+    modbus_err_t err = (modbus_err_t)vtable[reqhdr->id](&reqhdr->params, &rsphdr->result, context);
 
     return err;
 }
@@ -90,7 +90,7 @@ static int register_event(ProtobufCBinaryData *req, ProtobufCBinaryData *reply, 
             handler->register_event(creq->event);
         }
     }
-    return MODBUS_SERVICE_ERR_NONE;
+    return MODBUS_ERR_NONE;
 }
 
 static int unregister_event(ProtobufCBinaryData *req, ProtobufCBinaryData *reply, void *context)
@@ -108,14 +108,14 @@ static int unregister_event(ProtobufCBinaryData *req, ProtobufCBinaryData *reply
             conn_data->receiver->register_event[i] = false;
         }
     }
-    return MODBUS_SERVICE_ERR_NONE;
+    return MODBUS_ERR_NONE;
 }
 
 static int get_emeter_output(ProtobufCBinaryData *req, ProtobufCBinaryData *reply, void *context)
 {
     modbus_meter_output_t emeter_output;
-    modbus_service_err_t error = modbus_impl_get_handle()->get_emeter_output(&emeter_output);
-    if (error != MODBUS_SERVICE_ERR_NONE)
+    modbus_err_t error = modbus_impl_get_handle()->get_emeter_output(&emeter_output);
+    if (error != MODBUS_ERR_NONE)
     {
         SLOGE("Get emeter output info error %d", error);
     }
@@ -148,8 +148,8 @@ static int get_emeter_output(ProtobufCBinaryData *req, ProtobufCBinaryData *repl
 static int get_emeter_version(ProtobufCBinaryData *req, ProtobufCBinaryData *reply, void *context)
 {
     modbus_version_t temp_version;
-    modbus_service_err_t error = modbus_impl_get_handle()->get_emeter_version_info(&temp_version);
-    if (error != MODBUS_SERVICE_ERR_NONE)
+    modbus_err_t error = modbus_impl_get_handle()->get_emeter_version_info(&temp_version);
+    if (error != MODBUS_ERR_NONE)
     {
         SLOGE("Get temp emeter version info error %d", error);
     }
@@ -179,8 +179,8 @@ static int get_emeter_version(ProtobufCBinaryData *req, ProtobufCBinaryData *rep
 static int get_isocha_version(ProtobufCBinaryData *req, ProtobufCBinaryData *reply, void *context)
 {
     modbus_version_t temp_version;
-    modbus_service_err_t error = modbus_impl_get_handle()->get_isocha_version_info(&temp_version);
-    if (error != MODBUS_SERVICE_ERR_NONE)
+    modbus_err_t error = modbus_impl_get_handle()->get_isocha_version_info(&temp_version);
+    if (error != MODBUS_ERR_NONE)
     {
         SLOGE("Get temp emeter version info error %d", error);
     }
@@ -210,8 +210,8 @@ static int get_isocha_version(ProtobufCBinaryData *req, ProtobufCBinaryData *rep
 static int get_emeter_status(ProtobufCBinaryData *req, ProtobufCBinaryData *reply, void *context)
 {
     unit32_t temp_info;
-    modbus_service_err_t error = modbus_impl_get_handle()->get_emeter_status_info(&temp_info);
-    if (error != MODBUS_SERVICE_ERR_NONE)
+    modbus_err_t error = modbus_impl_get_handle()->get_emeter_status_info(&temp_info);
+    if (error != MODBUS_ERR_NONE)
     {
         SLOGE("Get temp emeter version info error %d", error);
     }
@@ -235,8 +235,8 @@ static int get_emeter_status(ProtobufCBinaryData *req, ProtobufCBinaryData *repl
 static int get_isocha_status(ProtobufCBinaryData *req, ProtobufCBinaryData *reply, void *context)
 {
     unit32_t temp_info;
-    modbus_service_err_t error = modbus_impl_get_handle()->get_isocha_status_info(&temp_info);
-    if (error != MODBUS_SERVICE_ERR_NONE)
+    modbus_err_t error = modbus_impl_get_handle()->get_isocha_status_info(&temp_info);
+    if (error != MODBUS_ERR_NONE)
     {
         SLOGE("Get temp emeter version info error %d", error);
     }
@@ -261,11 +261,11 @@ static int set_iso_measurement_state(ProtobufCBinaryData *req, ProtobufCBinaryDa
 {
     ModbusService__IsochaMeasureControl *creq = modbus_service__isocha_measure_control__unpack(NULL, req->len, req->data);
     modbus_impl_get_handle()->set_isocha_measurement_state((bool)creq->start);
-    return MODBUS_SERVICE_ERR_NONE;
+    return MODBUS_ERR_NONE;
 }
 
 static int set_system_reboot(ProtobufCBinaryData *req, ProtobufCBinaryData *reply, void *context)
 {
     modbus_impl_get_handle()->set_system_reboot();
-    return MODBUS_SERVICE_ERR_NONE;
+    return MODBUS_ERR_NONE;
 }

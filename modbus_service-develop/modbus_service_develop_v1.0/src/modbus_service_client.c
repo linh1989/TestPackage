@@ -70,7 +70,7 @@ static event_callback_info_t callbacks[MODBUS_SERVICE_EVENT_ALL];
 static bool wait_resp = false;
 static pthread_mutex_t resp_data_lock;
 
-cancomm_event_t resp_event_tbl[MODBUS_RESPONSE_MAX] = {
+modbus_event_t resp_event_tbl[MODBUS_RESPONSE_MAX] = {
     MODBUS_EVENT_EMETER_OUTPUT,         // MODBUS_RESPONSE_EMETER_OUTPUT
     MODBUS_EVENT_OUTPUT0_ISO_STATUS,    // MODBUS_RESPONSE_OUTPUT0_ISO_STATUS
     MODBUS_EVENT_BUS_STATUS,            // MODBUS_RESPONSE_BUS_STATUS
@@ -85,7 +85,7 @@ cancomm_event_t resp_event_tbl[MODBUS_RESPONSE_MAX] = {
 };
 
 static void read_cb(void);
-static modbus_service_err_t modbus_send_request(modbus_request_t request, bool bsync, uint32_t len, uint8_t *data);
+static modbus_err_t modbus_send_request(modbus_request_t request, bool bsync, uint32_t len, uint8_t *data);
 
 static void *client_thread(void *arg)
 {
@@ -122,13 +122,13 @@ static void *client_thread(void *arg)
             if (callbacks[i].func)
             {
                 SLOGI("Send event %d register request", i);
-                Cancomm__Event msg = CANCOMM__EVENT__INIT;
+                ModbusService__Event msg = MODBUS_SERVICE__EVENT__INIT;
                 msg.event = (uint32_t)i;
 
                 uint8_t buff[MSG_BUFF_LENTH_MAX];
-                size_t len = cancomm__event__pack(&msg, buff);
-                modbus_service_err_t error = modbus_send_request(MODBUS_REQUEST_REGISTER_EVENT, false, len, buff);
-                if (error != MODBUS_SERVICE_ERR_NONE)
+                size_t len = modbus_service__event__pack(&msg, buff);
+                modbus_err_t error = modbus_send_request(MODBUS_REQUEST_REGISTER_EVENT, false, len, buff);
+                if (error != MODBUS_ERR_NONE)
                 {
                     SLOGE("Send event register request failed: %d", error);
                 }
@@ -144,11 +144,11 @@ static void *client_thread(void *arg)
     return NULL;
 }
 
-modbus_service_err_t modbus_init(modbus_connect_cb_t connect_cb, void *connect_ctx)
+modbus_err_t modbus_init(modbus_connect_cb_t connect_cb, void *connect_ctx)
 {
     FUNC_ENTRY();
 
-    modbus_service_err_t error = MODBUS_SERVICE_ERR_UNKNOWN;
+    modbus_err_t error = MODBUS_ERR_UNKNOWN;
 
     if (!is_initialized)
     {
@@ -172,23 +172,23 @@ modbus_service_err_t modbus_init(modbus_connect_cb_t connect_cb, void *connect_c
         is_connected = false;
         wait_resp = false;
 
-        error = MODBUS_SERVICE_ERR_NONE;
+        error = MODBUS_ERR_NONE;
     }
     else
     {
-        error = MODBUS_SERVICE_ERR_ALREADY_INITIALIZED;
+        error = MODBUS_ERR_ALREADY_INITIALIZED;
     }
 
     FUNC_EXIT();
     return error;
 }
 
-modbus_service_err_t modbus_free(void)
+modbus_err_t modbus_free(void)
 {
-    return MODBUS_SERVICE_ERR_NONE;
+    return MODBUS_ERR_NONE;
 }
 
-static modbus_service_err_t modbus_send_request(modbus_request_t request, bool bsync, uint32_t len, uint8_t *data)
+static modbus_err_t modbus_send_request(modbus_request_t request, bool bsync, uint32_t len, uint8_t *data)
 {
     Rpcproto__ReqHeader req_header = RPCPROTO__REQ_HEADER__INIT;
     req_header.id = request;
@@ -212,7 +212,7 @@ static modbus_service_err_t modbus_send_request(modbus_request_t request, bool b
     if (write_cnt < 0)
     {
         SLOGE("Send request %d failed", request);
-        return MODBUS_SERVICE_ERR_SEND_REQ_FAILED;
+        return MODBUS_ERR_SEND_REQ_FAILED;
     }
 
     // Wait for response from service
@@ -227,11 +227,11 @@ static modbus_service_err_t modbus_send_request(modbus_request_t request, bool b
         if (wait_cnt >= RESPONSE_CHECK_MAX)
         {
             SLOGE("Wait response for request %d timed out", request);
-            return modbus_service_err_tIMED_OUT;
+            return MODBUS_ERR_TIMED_OUT;
         }
     }
 
-    return MODBUS_SERVICE_ERR_NONE;
+    return MODBUS_ERR_NONE;
 }
 
 static void read_cb(void)
@@ -409,19 +409,19 @@ static void read_cb(void)
     FUNC_EXIT();
 }
 
-modbus_service_err_t modbus_register_event(modbus_event_t event, modbus_event_cb_t func_ptr, void *context)
+modbus_err_t modbus_register_event(modbus_event_t event, modbus_event_cb_t func_ptr, void *context)
 {
     SLOGI("Register event %d", event);
 
-    modbus_service_err_t error = MODBUS_SERVICE_ERR_UNKNOWN;
+    modbus_err_t error = MODBUS_ERR_UNKNOWN;
     if (!is_initialized)
     {
-        error = MODBUS_SERVICE_ERR_NOT_INITIALIZED;
+        error = MODBUS_ERR_NOT_INITIALIZED;
     }
 
     if (!func_ptr)
     {
-        error = MODBUS_SERVICE_ERR_INVALID_PARAM;
+        error = MODBUS_ERR_INVALID_PARAM;
     }
     else
     {
@@ -455,13 +455,13 @@ modbus_service_err_t modbus_register_event(modbus_event_t event, modbus_event_cb
             SLOGI("Event %d register request not sent", event);
         }
 
-        error = MODBUS_SERVICE_ERR_NONE;
+        error = MODBUS_ERR_NONE;
     }
 
     return error;
 }
 
-modbus_service_err_t modbus_unregister_event(cancomm_event_t event)
+modbus_err_t modbus_unregister_event(modbus_event_t event)
 {
     SLOGI("Unregister event %d", event);
 
@@ -488,29 +488,29 @@ modbus_service_err_t modbus_unregister_event(cancomm_event_t event)
 
     uint8_t buff[MSG_BUFF_LENTH_MAX];
     size_t len = modbus_service__event__pack(&msg, buff);
-    modbus_service_err_t error = modbus_send_request(MODBUS_REQUEST_UNREGISTER_EVENT, false, len, buff);
+    modbus_err_t error = modbus_send_request(MODBUS_REQUEST_UNREGISTER_EVENT, false, len, buff);
 
     return error;
 }
 
-modbus_service_err_t modbus_request_emeter_output(void)
+modbus_err_t modbus_request_emeter_output(void)
 {
     FUNC_ENTRY();
     SLOGI("Get emeter%d output", m_id);
 
     CHECK_CLIENT_STATUS();
 
-    modbus_service_err_t error = MODBUS_SERVICE_ERR_UNKNOWN;
+    modbus_err_t error = MODBUS_ERR_UNKNOWN;
     if (m_id >= 1)
     {
         SLOGE("Invalid rec id %d", m_id);
-        error = MODBUS_SERVICE_ERR_INVALID_PARAM;
+        error = MODBUS_ERR_INVALID_PARAM;
     }
     else
     {
         modbus_request_t request = MODBUS_REQUEST_EMETER_OUTPUT;
-        modbus_service_err_t error = modbus_send_request(request, true, 0, NULL);
-        if (error != MODBUS_SERVICE_ERR_NONE)
+        modbus_err_t error = modbus_send_request(request, true, 0, NULL);
+        if (error != MODBUS_ERR_NONE)
         {
             SLOGE("Get emeter output failed with error %d", error);
         }
@@ -522,7 +522,7 @@ modbus_service_err_t modbus_request_emeter_output(void)
 
 static modbus_version_t emeter_verision_info_local;
 
-modbus_service_err_t cancomm_get_emeter_version_infor(modbus_version_t *emeter_version)
+modbus_err_t modbus_get_emeter_version_infor(modbus_version_t *emeter_version)
 {
     FUNC_ENTRY();
 
@@ -530,12 +530,12 @@ modbus_service_err_t cancomm_get_emeter_version_infor(modbus_version_t *emeter_v
 
     if (!emeter_version)
     {
-        return MODBUS_SERVICE_ERR_INVALID_PARAM;
+        return MODBUS_ERR_INVALID_PARAM;
     }
 
     modbus_request_t request = MODBUS_REQUEST_GET_EMETER_VERSION;
-    modbus_service_err_t error = modbus_send_request(request, true, 0, NULL);
-    if (error != MODBUS_SERVICE_ERR_NONE)
+    modbus_err_t error = modbus_send_request(request, true, 0, NULL);
+    if (error != MODBUS_ERR_NONE)
     {
         SLOGE("Get Emeter version failed with error %d", error);
     }
@@ -553,7 +553,7 @@ modbus_service_err_t cancomm_get_emeter_version_infor(modbus_version_t *emeter_v
 
 static modbus_version_t isocha_verision_info_local;
 
-modbus_service_err_t cancomm_get_isocha_version_infor(modbus_version_t *isocha_version)
+modbus_err_t modbus_get_isocha_version_infor(modbus_version_t *isocha_version)
 {
     FUNC_ENTRY();
 
@@ -561,12 +561,12 @@ modbus_service_err_t cancomm_get_isocha_version_infor(modbus_version_t *isocha_v
 
     if (!emeter_version)
     {
-        return MODBUS_SERVICE_ERR_INVALID_PARAM;
+        return MODBUS_ERR_INVALID_PARAM;
     }
 
     modbus_request_t request = MODBUS_REQUEST_GET_ISOCHA_VERSION;
-    modbus_service_err_t error = modbus_send_request(request, true, 0, NULL);
-    if (error != MODBUS_SERVICE_ERR_NONE)
+    modbus_err_t error = modbus_send_request(request, true, 0, NULL);
+    if (error != MODBUS_ERR_NONE)
     {
         SLOGE("Get Emeter version failed with error %d", error);
     }
@@ -582,7 +582,7 @@ modbus_service_err_t cancomm_get_isocha_version_infor(modbus_version_t *isocha_v
 }
 
 static uint32_t  emeter_error_code_local;
-modbus_service_err_t cancomm_get_emeter_error_code(uint32_t *emeter_error_code)
+modbus_err_t modbus_get_emeter_error_code(uint32_t *emeter_error_code)
 {
     FUNC_ENTRY();
 
@@ -590,12 +590,12 @@ modbus_service_err_t cancomm_get_emeter_error_code(uint32_t *emeter_error_code)
 
     if ((!hv_output_error) || (idx > 2))
     {
-        return CANCOMM_ERR_INVALID_PARAM;
+        return MODBUS_ERR_INVALID_PARAM;
     }
 
     modbus_request_t request = MODBUS_REQUEST_GET_ISOCHA_STATUS;
-    modbus_service_err_t error = modbus_send_request(request, true, 0, NULL);
-    if (error != MODBUS_SERVICE_ERR_NONE)
+    modbus_err_t error = modbus_send_request(request, true, 0, NULL);
+    if (error != MODBUS_ERR_NONE)
     {
         SLOGE("Get Hv error code failed with error %d", error);
     }
@@ -611,7 +611,7 @@ modbus_service_err_t cancomm_get_emeter_error_code(uint32_t *emeter_error_code)
 }
 
 static uint32_t  isocha_error_code_local;
-modbus_service_err_t cancomm_get_isocha_error_code(uint32_t *isocha_error_code)
+modbus_err_t modbus_get_isocha_error_code(uint32_t *isocha_error_code)
 {
     FUNC_ENTRY();
 
@@ -619,12 +619,12 @@ modbus_service_err_t cancomm_get_isocha_error_code(uint32_t *isocha_error_code)
 
     if ((!hv_output_error) || (idx > 2))
     {
-        return CANCOMM_ERR_INVALID_PARAM;
+        return MODBUS_ERR_INVALID_PARAM;
     }
 
     modbus_request_t request = MODBUS_REQUEST_GET_ISOCHA_STATUS;
-    modbus_service_err_t error = modbus_send_request(request, true, 0, NULL);
-    if (error != MODBUS_SERVICE_ERR_NONE)
+    modbus_err_t error = modbus_send_request(request, true, 0, NULL);
+    if (error != MODBUS_ERR_NONE)
     {
         SLOGE("Get Hv error code failed with error %d", error);
     }
@@ -639,16 +639,16 @@ modbus_service_err_t cancomm_get_isocha_error_code(uint32_t *isocha_error_code)
     return error;
 }
 
-modbus_service_err_t cancomm_set_system_reboot(void)
+modbus_err_t modbus_set_system_reboot(void)
 {
     FUNC_ENTRY();
     CHECK_CLIENT_STATUS();
-    modbus_service_err_t error = cancomm_send_request(CANCOMM_REQUEST_SET_SYSTEM_REBOOT, false, 0, NULL);
+    modbus_err_t error = modbus_send_request(MODBUS_REQUEST_SET_SYSTEM_REBOOT, false, 0, NULL);
     FUNC_EXIT();
     return error;
 }
 
-modbus_service_err_t modbus_set_iso_measurement_state(bool state)
+modbus_err_t modbus_set_iso_measurement_state(bool state)
 {
     SLOGI("Isolation Measurement state %d", state);
 
@@ -661,8 +661,8 @@ modbus_service_err_t modbus_set_iso_measurement_state(bool state)
 
     uint8_t buff[MSG_BUFF_LENTH_MAX];
     size_t len = modbus_service__isocha_measure_control__pack(&msg, buff);
-    modbus_service_err_t error = modbus_send_request(request, false, len, buff);
-    if (error != MODBUS_SERVICE_ERR_NONE)
+    modbus_err_t error = modbus_send_request(request, false, len, buff);
+    if (error != MODBUS_ERR_NONE)
     {
         SLOGE("Set Isolation measurement state failed with error %d", error);
     }

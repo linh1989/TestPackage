@@ -1,0 +1,19 @@
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+*.d
+*.TMP
+*.bak
+*.zip
+*.crf
+*.exe
+.settings/
+Debug/
+Documentation/
+*.ipch
+*.bin
+*.bin.*
+*.pyc
+.vscode/

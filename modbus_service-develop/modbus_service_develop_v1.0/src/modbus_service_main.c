@@ -8,7 +8,7 @@
 int main(int argc, char **argv) {
     SLOG_INIT();
 
-    if (modbus_service_run(argv[0]) != MODBUS_SERVICE_ERR_NONE) {
+    if (modbus_service_run(argv[0]) != MODBUS_ERR_NONE) {
         SLOGE("%s", "Failed to start service");
         return -1;
     }

@@ -5,8 +5,8 @@
 #include "modbus_service_types.h"
 
 
-#define SOCKET_PORT 9876
+#define SOCKET_PORT 12345
 
-modbus_service_err_t modbus_service_run(const char* service);
+modbus_err_t modbus_service_run(const char* service);
 
 #endif // _MODBUS_SERVICE_H_

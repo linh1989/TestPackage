@@ -15,15 +15,15 @@
 #include "modbus_service_client.h"
 
 typedef struct {
-    modbus_service_err_t (*run)                       ();
-	modbus_service_err_t (*register_event)			  (modbus_event_t event);
-    modbus_service_err_t (*get_emeter_output)         (modbus_meter_output_t* emeter_output);
-	modbus_service_err_t (*get_emeter_version_info)   (modbus_version_t* version);
-	modbus_service_err_t (*get_isocha_version_info)   (modbus_version_t* version);
-	modbus_service_err_t (*get_emeter_status_info)    (uint32_t* error_code);
-	modbus_service_err_t (*get_isocha_status_info)    (uint32_t* error_code);
-	modbus_service_err_t (*set_system_reboot)         ();
-	modbus_service_err_t (*set_isocha_measurement_state)   		      (bool start);
+    modbus_err_t (*run)                       ();
+	modbus_err_t (*register_event)			  (modbus_event_t event);
+    modbus_err_t (*get_emeter_output)         (modbus_meter_output_t* emeter_output);
+	modbus_err_t (*get_emeter_version_info)   (modbus_version_t* version);
+	modbus_err_t (*get_isocha_version_info)   (modbus_version_t* version);
+	modbus_err_t (*get_emeter_status_info)    (uint32_t* error_code);
+	modbus_err_t (*get_isocha_status_info)    (uint32_t* error_code);
+	modbus_err_t (*set_system_reboot)         ();
+	modbus_err_t (*set_isocha_measurement_state)   		      (bool start);
 } modbus_impl_handle_t;
 
 typedef void (*notification_handler_t)(modbus_response_t response, void* data, void* context);
